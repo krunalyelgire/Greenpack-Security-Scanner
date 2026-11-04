@@ -1,1 +1,128 @@
 
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Greenpack Security QR Scanner</title>
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f1f5f2;
+      color: #183b29;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .card {
+      max-width: 450px;
+      margin: 25px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 14px;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      margin: 10px 0;
+      border: 0;
+      border-radius: 8px;
+      background: #176b3a;
+      color: white;
+      font-size: 16px;
+    }
+
+    #reader {
+      width: 100%;
+    }
+
+    #message, #result {
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="card">
+    <h2>GREENPACK</h2>
+    <h3>Security QR Scanner Test</h3>
+
+    <div id="reader"></div>
+
+    <button onclick="startCamera()">START CAMERA</button>
+    <button onclick="stopCamera()">STOP CAMERA</button>
+
+    <p id="message">Tap Start Camera.</p>
+    <p id="result"></p>
+  </div>
+
+  <script>
+    let scanner = null;
+
+    async function startCamera() {
+      const message = document.getElementById("message");
+
+      message.textContent = "Checking cameras...";
+
+      try {
+        if (!window.Html5Qrcode) {
+          throw new Error("QR scanner library did not load.");
+        }
+
+        if (!scanner) {
+          scanner = new Html5Qrcode("reader");
+        }
+
+        const cameras = await Html5Qrcode.getCameras();
+
+        if (!cameras || cameras.length === 0) {
+          throw new Error("No camera detected.");
+        }
+
+        const camera = cameras.find(c =>
+          /back|rear|environment/i.test(c.label)
+        ) || cameras[cameras.length - 1];
+
+        message.textContent =
+          "Opening " + (camera.label || "camera");
+
+        await scanner.start(
+          camera.id,
+          {
+            fps: 10,
+            qrbox: { width: 230, height: 230 }
+          },
+          async function(decodedText) {
+            document.getElementById("result").textContent =
+              "QR detected: " + decodedText;
+
+            await stopCamera();
+          },
+          function() {}
+        );
+
+        message.textContent =
+          "Camera is working. Point it at a QR code.";
+
+      } catch (error) {
+        message.textContent = "Camera error: " + error;
+      }
+    }
+
+    async function stopCamera() {
+      if (scanner && scanner.isScanning) {
+        await scanner.stop();
+      }
+
+      document.getElementById("message").textContent =
+        "Camera stopped.";
+    }
+  </script>
+
+</body>
+</html>
+

@@ -97,11 +97,24 @@
             qrbox: { width: 230, height: 230 }
           },
           async function(decodedText) {
-            document.getElementById("result").textContent =
-              "QR detected: " + decodedText;
+  await stopCamera();
 
-            await stopCamera();
-          },
+  document.getElementById("result").textContent =
+    "QR detected. Sending to Security system...";
+
+  if (window.opener && !window.opener.closed) {
+    window.opener.postMessage({
+      type: "GP_QR_SCANNED",
+      token: decodedText
+    }, "https://script.google.com");
+
+    document.getElementById("message").textContent =
+      "QR successfully sent. Return to the Security page.";
+  } else {
+    document.getElementById("message").textContent =
+      "Security page not connected. Please open this scanner using the Security website.";
+  }
+},
           function() {}
         );
 

@@ -46,7 +46,6 @@
 </head>
 
 <body>
-
   <div class="card">
     <h2>GREENPACK</h2>
     <h3>Security QR Scanner Test</h3>
@@ -62,15 +61,24 @@
 
   <script>
     let scanner = null;
+    let cameraStarting = false;
+    let qrProcessed = false;
 
     async function startCamera() {
       const message = document.getElementById("message");
 
+      if (cameraStarting || (scanner && scanner.isScanning)) {
+        return;
+      }
+
+      cameraStarting = true;
+      qrProcessed = false;
+      document.getElementById("result").textContent = "";
       message.textContent = "Checking cameras...";
 
       try {
         if (!window.Html5Qrcode) {
-          throw new Error("QR scanner library did not load.");
+          throw new Error("QR scanner library did not load. Check internet connection.");
         }
 
         if (!scanner) {
@@ -88,7 +96,7 @@
         ) || cameras[cameras.length - 1];
 
         message.textContent =
-          "Opening " + (camera.label || "camera");
+          "Opening " + (camera.label || "camera") + "...";
 
         await scanner.start(
           camera.id,
@@ -97,33 +105,43 @@
             qrbox: { width: 230, height: 230 }
           },
           async function(decodedText) {
-  await stopCamera();
 
-  document.getElementById("result").textContent =
-    "QR detected. Sending to Security system...";
+            if (qrProcessed) return;
+            qrProcessed = true;
 
-  if (window.opener && !window.opener.closed) {
-  window.opener.postMessage({
-    type: "GP_QR_SCANNED",
-    token: decodedText
-  }, "*");
+            try {
+              await stopCamera();
+            } catch (e) {}
 
-  document.getElementById("message").textContent =
-    "QR sent. Return to the Security page.";
-} else {
-  document.getElementById("message").textContent =
-    "Security page not connected. Please open this scanner using the Security website.";
-}
-  }
-},
-          function() {}
+            document.getElementById("result").textContent =
+              "QR detected. Sending to Security system...";
+
+            if (window.opener && !window.opener.closed) {
+              window.opener.postMessage({
+                type: "GP_QR_SCANNED",
+                token: decodedText
+              }, "*");
+
+              message.textContent =
+                "QR sent. Return to the Security page.";
+            } else {
+              message.textContent =
+                "Security page not connected. Open this scanner from the Security website.";
+            }
+          },
+          function(errorMessage) {
+            // Ignore normal QR scanning errors.
+          }
         );
 
         message.textContent =
           "Camera is working. Point it at a QR code.";
 
       } catch (error) {
-        message.textContent = "Camera error: " + error;
+        message.textContent = "Camera error: " +
+          (error.message || error);
+      } finally {
+        cameraStarting = false;
       }
     }
 
@@ -136,7 +154,5 @@
         "Camera stopped.";
     }
   </script>
-
 </body>
 </html>
-

@@ -103,16 +103,17 @@
     "QR detected. Sending to Security system...";
 
   if (window.opener && !window.opener.closed) {
-    window.opener.postMessage({
-      type: "GP_QR_SCANNED",
-      token: decodedText
-    }, "https://script.google.com");
+  window.opener.postMessage({
+    type: "GP_QR_SCANNED",
+    token: decodedText
+  }, "*");
 
-    document.getElementById("message").textContent =
-      "QR successfully sent. Return to the Security page.";
-  } else {
-    document.getElementById("message").textContent =
-      "Security page not connected. Please open this scanner using the Security website.";
+  document.getElementById("message").textContent =
+    "QR sent. Return to the Security page.";
+} else {
+  document.getElementById("message").textContent =
+    "Security page not connected. Please open this scanner using the Security website.";
+}
   }
 },
           function() {}
